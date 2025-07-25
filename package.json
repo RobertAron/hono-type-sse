@@ -1,16 +1,19 @@
 {
-  "name": "hono-type-sse",
-  "module": "index.ts",
+  "name": "@robertaron/hono-typed-sse",
+  "exports": {
+    "./*": {
+      "import": "./dist/*.mjs",
+      "require": "./dist/*.cjs",
+      "types": "./dist/*.d.ts"
+    }
+  },
   "type": "module",
   "devDependencies": {
+    "@biomejs/biome": "2.1.2",
     "@hono/node-server": "^1.17.1",
-    "@hono/zod-validator": "^0.7.2",
-    "@microsoft/fetch-event-source": "^2.0.1",
-    "@types/bun": "latest",
     "tsup": "^8.5.0",
     "tsx": "^4.20.3",
-    "typescript": "^5.8.3",
-    "zod": "^4.0.5"
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "eventsource": "^4.0.0",
@@ -18,6 +21,7 @@
   },
   "scripts": {
     "example:server": "tsx watch ./example/server.ts",
-    "example:client": "tsx watch ./example/client.ts"
+    "example:client": "tsx watch ./example/client.ts",
+    "tsup":"tsup --config tsup.ts"
   }
 }

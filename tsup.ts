@@ -1,9 +1,9 @@
-import { defineConfig } from 'tsup';
+import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: ["src/connectToSse.ts", "src/connectToSseNode.ts", "typedSSE.ts"],
   dts: true,
-  format: ['esm', 'cjs'],
+  format: ["esm", "cjs"],
   sourcemap: true,
   clean: true,
 });
