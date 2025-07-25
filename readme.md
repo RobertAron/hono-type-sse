@@ -19,7 +19,7 @@ const app = new Hono().get("/",
   }
 }));
 // Client
-import {streamSSETyped} from "@robertaron/hono-typed-sse/connectToSse";
+import {connectToSSE} from "@robertaron/hono-typed-sse/connectToSse";
 const client = hc<AppType>("http://localhost:1234");
 const closeSse = connectToSSE(client.index, {
   onOpen: () => console.log("opened!"),
@@ -35,6 +35,9 @@ setTimeout(() => {
 ## Node Compatibility
 
 NodeJS _does not_ have `EventSource` available. In order for this library to work with node, you can use the import which adapts to the [eventsource](https://www.npmjs.com/package/eventsource) npm package.
+```ts
+import {connectToSSE} from "@robertaron/hono-typed-sse/connectToSseNode";
+```
 
 ## Motivation
 
