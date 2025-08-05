@@ -18,8 +18,14 @@
       ]
     }
   },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RobertAron/hono-type-sse"
+  },
   "type": "module",
-  "access": "public",
   "devDependencies": {
     "@biomejs/biome": "2.1.2",
     "@hono/node-server": "^1.17.1",
