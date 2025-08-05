@@ -1,5 +1,10 @@
 {
   "name": "@robertaron/hono-typed-sse",
+  "version": "0.0.1",
+  "files": [
+    "dist/"
+  ],
+  "private": false,
   "exports": {
     "./*": {
       "import": "./dist/*.mjs",
@@ -22,6 +27,6 @@
   "scripts": {
     "example:server": "tsx watch ./example/server.ts",
     "example:client": "tsx watch ./example/client.ts",
-    "tsup":"tsup --config tsup.ts"
+    "build": "tsup --config tsup.ts"
   }
 }

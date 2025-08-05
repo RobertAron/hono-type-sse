@@ -8,18 +8,21 @@ npm install @robertaron/hono-typed-sse
 
 ```ts
 // Server
-import {streamSSETyped} from "@robertaron/hono-typed-sse/typedSSE";
-const app = new Hono().get("/", 
-  (c) => streamSSETyped<{ myType: number; }>(c, async (s) => {
-  for (let i = 0; i < 5; i++) {
-    s.writeSSE({
-      data: { myType: 1 },
-    });
-    await s.sleep(1000);
-  }
-}));
+import { streamSSETyped } from "@robertaron/hono-typed-sse/typedSSE";
+const app = new Hono().get("/", (c) =>
+  streamSSETyped<{ myType: number }>(c, async (s) => {
+    for (let i = 0; i < 5; i++) {
+      s.writeSSE({
+        data: { myType: 1 },
+      });
+      await s.sleep(1000);
+    }
+  })
+);
 // Client
-import {streamSSETyped} from "@robertaron/hono-typed-sse/connectToSse";
+import { streamSSETyped } from "@robertaron/hono-typed-sse/connectToSse";
+// Or polyfilled import if using node.
+// import { streamSSETyped } from "@robertaron/hono-typed-sse/connectToSse";
 const client = hc<AppType>("http://localhost:1234");
 const closeSse = connectToSSE(client.index, {
   onOpen: () => console.log("opened!"),
@@ -38,7 +41,6 @@ NodeJS _does not_ have `EventSource` available. In order for this library to wor
 
 ## Motivation
 
-This package aims to unlock the power of SSE and hono with minimal overhead. 
+This package aims to unlock the power of SSE and hono with minimal overhead.
 
-
-Hono has an extremely powerful RPC system, but it doesn't work for server side events. It's unlikely there will be 1st party support in the near future due to [package size concerns](https://github.com/honojs/hono/pull/3957#issuecomment-2693310852).
+Hono has a great RPC system, but it doesn't work for server side events. It's unlikely there will be 1st party support in the near future due to [package size concerns](https://github.com/honojs/hono/pull/3957#issuecomment-2693310852).
