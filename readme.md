@@ -38,6 +38,9 @@ setTimeout(() => {
 ## Node Compatibility
 
 NodeJS _does not_ have `EventSource` available. In order for this library to work with node, you can use the import which adapts to the [eventsource](https://www.npmjs.com/package/eventsource) npm package.
+```ts
+import {connectToSSE} from "@robertaron/hono-typed-sse/connectToSseNode";
+```
 
 ## Motivation
 
