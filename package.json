@@ -7,9 +7,15 @@
   "private": false,
   "exports": {
     "./*": {
-      "import": "./dist/*.mjs",
       "require": "./dist/*.cjs",
-      "types": "./dist/*.d.ts"
+      "import": "./dist/*.mjs"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "dist/*.d.ts"
+      ]
     }
   },
   "type": "module",
