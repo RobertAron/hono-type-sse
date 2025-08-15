@@ -1,20 +1,37 @@
 {
   "name": "@robertaron/hono-typed-sse",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "files": [
     "dist/"
   ],
   "private": false,
   "exports": {
-    "./*": {
-      "require": "./dist/*.cjs",
-      "import": "./dist/*.mjs"
+    "./connectToSse": {
+      "types": "./dist/connectToSse.d.ts",
+      "import": "./dist/connectToSse.js",
+      "require": "./dist/connectToSse.cjs"
+    },
+    "./connectToSseNode": {
+      "types": "./dist/connectToSseNode.d.ts",
+      "import": "./dist/connectToSseNode.js",
+      "require": "./dist/connectToSseNode.cjs"
+    },
+    "./typedSSE": {
+      "types": "./dist/typedSSE.d.ts",
+      "import": "./dist/typedSSE.js",
+      "require": "./dist/typedSSE.cjs"
     }
   },
   "typesVersions": {
     "*": {
-      "*": [
-        "dist/*.d.ts"
+      "connectToSse": [
+        "./dist/connectToSse.d.ts"
+      ],
+      "connectToSseNode": [
+        "./dist/connectToSseNode.d.ts"
+      ],
+      "typedSSE": [
+        "./dist/typedSSE.d.ts"
       ]
     }
   },

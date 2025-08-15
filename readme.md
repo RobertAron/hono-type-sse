@@ -24,14 +24,14 @@ import { streamSSETyped } from "@robertaron/hono-typed-sse/connectToSse";
 // Or polyfilled import if using node.
 // import { streamSSETyped } from "@robertaron/hono-typed-sse/connectToSse";
 const client = hc<AppType>("http://localhost:1234");
-const closeSse = connectToSSE(client.index, {
+const sse = connectToSSE(client.index, {
   onOpen: () => console.log("opened!"),
-  onMessage: ({ data }) => console.log(`Got data ${data}`),
+  onMessage: (_, data) => console.log(`Got data ${data}`),
   onError: () => console.log("Got error!"),
 });
 
 setTimeout(() => {
-  closeSse();
+  sse.close();
 }, 5_000);
 ```
 
