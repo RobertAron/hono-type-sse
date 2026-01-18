@@ -20,16 +20,21 @@ export function connectToSSE<T, U>(
     onMessage?: (ev: MessageEvent, data: T) => void;
     onError?: EventListenerOrEventListenerObject;
     onOpen?: (ev: Event) => void;
+    onDone?: (ev: MessageEvent) => void;
     withCredentials?: boolean;
   } & OptionalIfUndefined<{ params: Parameters<(typeof client)["$url"]>[0] }>,
 ) {
-  const { onError, onMessage, onOpen, params, withCredentials } = args ?? {};
+  const { onError, onMessage, onOpen, onDone, params, withCredentials } = args ?? {};
   const eventsource = new EventSource(client.$url(params), { withCredentials });
   if (onMessage !== undefined)
     eventsource.addEventListener("message", (ev: MessageEvent) => {
       const data: T = JSON.parse(ev.data);
       onMessage(ev, data);
     });
+  eventsource.addEventListener("done", (ev) => {
+    eventsource.close();
+    if (onDone !== undefined) onDone(ev);
+  });
   if (onError !== undefined) eventsource.addEventListener("error", onError);
   if (onOpen !== undefined) eventsource.addEventListener("open", onOpen);
   return eventsource;

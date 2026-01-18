@@ -6,44 +6,49 @@
 npm install @robertaron/hono-typed-sse
 ```
 
+### Server
+
 ```ts
-// Server
+import { Hono } from "hono";
 import { streamSSETyped } from "@robertaron/hono-typed-sse/typedSSE";
-const app = new Hono().get("/", (c) =>
+
+const app = new Hono().get("/sse", (c) =>
   streamSSETyped<{ myType: number }>(c, async (s) => {
     for (let i = 0; i < 5; i++) {
       s.writeSSE({
-        data: { myType: 1 },
+        data: { myType: i },
       });
-      await s.sleep(1000);
+      await s.stream.sleep(1000);
     }
+    // done sends a custom event. This can be used to close the stream, and let the EventSource know it shouldn't try to re-connect.
+    await s.done();
   })
 );
-// Client
-import { streamSSETyped } from "@robertaron/hono-typed-sse/connectToSse";
-// Or polyfilled import if using node.
-// import { streamSSETyped } from "@robertaron/hono-typed-sse/connectToSse";
-const client = hc<AppType>("http://localhost:1234");
-const sse = connectToSSE(client.index, {
-  onOpen: () => console.log("opened!"),
-  onMessage: (_, data) => console.log(`Got data ${data}`),
-  onError: () => console.log("Got error!"),
-});
 
-setTimeout(() => {
-  sse.close();
-}, 5_000);
+export type AppType = typeof app;
 ```
 
-## Node Compatibility
+### Client
 
-NodeJS _does not_ have `EventSource` available. In order for this library to work with node, you can use the import which adapts to the [eventsource](https://www.npmjs.com/package/eventsource) npm package.
 ```ts
-import {connectToSSE} from "@robertaron/hono-typed-sse/connectToSseNode";
+import { hc } from "hono/client";
+import { connectToSSE } from "@robertaron/hono-typed-sse/connectToSse";
+import type { AppType } from "./server";
+
+const client = hc<AppType>("http://localhost:3000");
+
+connectToSSE(client.sse, {
+  onOpen: () => console.log("opened!"),
+  onMessage: (_, data) => console.log(`Got data: ${data.myType}`),
+  onDone: () => console.log("stream complete"),
+  onError: () => console.log("connection error"),
+});
 ```
+
+The client uses `EventSource` which is only available in browser environments. Testing the client from Node/Bun is not supported.
 
 ## Motivation
 
-This package aims to unlock the power of SSE and hono with minimal overhead.
+This package aims to unlock the power of SSE and Hono with minimal overhead.
 
-Hono has a great RPC system, but it doesn't work for server side events. It's unlikely there will be 1st party support in the near future due to [package size concerns](https://github.com/honojs/hono/pull/3957#issuecomment-2693310852).
+Hono has a great RPC system, but it doesn't work for server-sent events. It's unlikely there will be first-party support in the near future due to [package size concerns](https://github.com/honojs/hono/pull/3957#issuecomment-2693310852).

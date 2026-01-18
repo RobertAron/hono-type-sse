@@ -1,98 +1,41 @@
-// Base code:
-// https://github.com/honojs/hono/blob/main/src/helper/streaming/sse.ts
-// Minor changes in this file to do with adding generics + JSON.stringify
-import { StreamingApi } from "hono/utils/stream";
-import { HtmlEscapedCallbackPhase, resolveCallback } from "hono/utils/html";
 import type { Context, TypedResponse } from "hono";
+import { type SSEMessage, type SSEStreamingApi, streamSSE } from "hono/streaming";
 
-interface SSEMessageTypedError {
-  data: string;
-  event: "error";
+interface SSEMessageTyped<T> {
+  data: T;
+  event?: string;
   id?: string;
   retry?: number;
 }
-type SSEMessageTyped<T> =
-  | {
-      data: T;
-      event?: string;
-      id?: string;
-      retry?: number;
-    }
-  | SSEMessageTypedError;
 
-export class SSEStreamingApi<T> extends StreamingApi {
+class SSEStreamingApiTyped<T> {
+  constructor(public stream: SSEStreamingApi) {}
+
   async writeSSE(message: SSEMessageTyped<T>) {
-    const data = await resolveCallback(
-      JSON.stringify(message.data),
-      HtmlEscapedCallbackPhase.Stringify,
-      false,
-      {},
-    );
-    const dataLines = (data as string)
-      .split("\n")
-      .map((line) => {
-        return `data: ${line}`;
-      })
-      .join("\n");
+    // casting to allow replacing this single property in the object. Avoid making more garbage.
+    (message as SSEMessage).data = JSON.stringify(message.data);
+    await this.stream.writeSSE(message as SSEMessage);
+  }
 
-    const sseData =
-      [
-        message.event && `event: ${message.event}`,
-        dataLines,
-        message.id && `id: ${message.id}`,
-        message.retry && `retry: ${message.retry}`,
-      ]
-        .filter(Boolean)
-        .join("\n") + "\n\n";
-
-    await this.write(sseData);
+  async done() {
+    await this.stream.writeSSE({ event: "done", data: "" });
   }
 }
 
-const run = async <T>(
-  stream: SSEStreamingApi<T>,
-  cb: (stream: SSEStreamingApi<T>) => Promise<void>,
-  onError?: (e: Error, stream: SSEStreamingApi<T>) => Promise<void>,
-): Promise<void> => {
-  try {
-    await cb(stream);
-  } catch (e) {
-    if (e instanceof Error && onError) {
-      await onError(e, stream);
-
-      await stream.writeSSE({
-        event: "error",
-        data: e.message,
-      });
-    } else {
-      console.error(e);
-    }
-  } finally {
-    stream.close();
-  }
-};
-
-const contextStash: WeakMap<ReadableStream, Context> = new WeakMap<
-  ReadableStream,
-  Context
->();
-
 export const streamSSETyped = <T>(
   c: Context,
-  cb: (stream: SSEStreamingApi<T>) => Promise<void>,
-  onError?: (e: Error, stream: SSEStreamingApi<T>) => Promise<void>,
+  cb: (stream: SSEStreamingApiTyped<T>) => Promise<void>,
+  onError?: (e: Error, stream: SSEStreamingApiTyped<T>) => Promise<void>,
 ): Response & TypedResponse<T, 200, "typed-stream"> => {
-  const { readable, writable } = new TransformStream();
-  const stream = new SSEStreamingApi(writable, readable);
-  // in bun, `c` is destroyed when the request is returned, so hold it until the end of streaming
-  contextStash.set(stream.responseReadable, c);
-  c.header("Transfer-Encoding", "chunked");
-  c.header("Content-Type", "text/event-stream");
-  c.header("Cache-Control", "no-cache");
-  c.header("Connection", "keep-alive");
-
-  run(stream, cb, onError);
-
-  return c.newResponse(stream.responseReadable) as Response &
-    TypedResponse<T, 200, "typed-stream">;
+  return streamSSE(
+    c,
+    async (stream) => {
+      await cb(new SSEStreamingApiTyped<T>(stream));
+    },
+    onError
+      ? async (e, stream) => {
+          await onError(e, new SSEStreamingApiTyped<T>(stream));
+        }
+      : undefined,
+  ) as Response & TypedResponse<T, 200, "typed-stream">;
 };

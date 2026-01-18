@@ -1,6 +1,6 @@
 {
   "name": "@robertaron/hono-typed-sse",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "files": [
     "dist/"
   ],
@@ -10,11 +10,6 @@
       "types": "./dist/connectToSse.d.ts",
       "import": "./dist/connectToSse.js",
       "require": "./dist/connectToSse.cjs"
-    },
-    "./connectToSseNode": {
-      "types": "./dist/connectToSseNode.d.ts",
-      "import": "./dist/connectToSseNode.js",
-      "require": "./dist/connectToSseNode.cjs"
     },
     "./typedSSE": {
       "types": "./dist/typedSSE.d.ts",
@@ -26,9 +21,6 @@
     "*": {
       "connectToSse": [
         "./dist/connectToSse.d.ts"
-      ],
-      "connectToSseNode": [
-        "./dist/connectToSseNode.d.ts"
       ],
       "typedSSE": [
         "./dist/typedSSE.d.ts"
@@ -48,15 +40,17 @@
     "@hono/node-server": "^1.17.1",
     "tsup": "^8.5.0",
     "tsx": "^4.20.3",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "eventsource": "^4.0.0",
     "hono": "^4.8.5"
   },
   "scripts": {
-    "example:server": "tsx watch ./example/server.ts",
-    "example:client": "tsx watch ./example/client.ts",
-    "build": "tsup --config tsup.ts"
+    "example:server": "bun --watch ./example/server.ts",
+    "build": "rm -rf dist && tsup --config tsup.ts",
+    "publish": "npm run build && npm publish"
   }
 }
