@@ -1,34 +1,89 @@
-import type { ClientRequest } from "hono/client";
+import type { ClientResponse } from "hono/client";
 
-type OptionalIfUndefined<T> = {
-  [K in keyof T as undefined extends T[K] ? K : never]?: T[K];
-} & {
-  [K in keyof T as undefined extends T[K] ? never : K]: T[K];
+/**
+ * Extract the output type from a client's $get endpoint,
+ * but only if the outputFormat is "typed-stream".
+ */
+type ExtractSSEOutput<C> = C extends {
+  $get: (
+    ...args: never[]
+  ) => Promise<ClientResponse<infer O, infer _S, infer F>>;
+}
+  ? F extends "typed-stream"
+    ? O
+    : never
+  : never;
+
+/**
+ * Extract the $url parameter type from a client.
+ */
+type ExtractUrlArg<C> = C extends {
+  $url: (arg?: infer A) => URL;
+}
+  ? A
+  : undefined;
+
+/**
+ * Check if a type is an empty object {}, meaning no required keys.
+ */
+type IsEmptyObject<T> = keyof T extends never ? true : false;
+
+/**
+ * Determine whether urlParams should be required.
+ * Required only when ExtractUrlArg resolves to a non-empty object
+ * (i.e. the route has query or path params).
+ */
+type UrlParamsRequired<C> =
+  ExtractUrlArg<C> extends undefined
+    ? false
+    : IsEmptyObject<ExtractUrlArg<C>> extends true
+      ? false
+      : true;
+
+type SSEArgs<C> = {
+  urlParams?: ExtractUrlArg<C>;
+  onMessage?: (ev: MessageEvent, data: ExtractSSEOutput<C>) => void;
+  onError?: EventListenerOrEventListenerObject;
+  onOpen?: (ev: Event) => void;
+  onDone?: (ev: MessageEvent) => void;
+  withCredentials?: boolean;
 };
 
-export function connectToSSE<T, U>(
-  client: ClientRequest<{
-    $get: {
-      input: U;
-      output: T;
-      outputFormat: "typed-stream";
-      status: 200;
-    };
-  }>,
-  args?: {
-    params?: Parameters<(typeof client)["$url"]>[0];
-    onMessage?: (ev: MessageEvent, data: T) => void;
-    onError?: EventListenerOrEventListenerObject;
-    onOpen?: (ev: Event) => void;
-    onDone?: (ev: MessageEvent) => void;
-    withCredentials?: boolean;
-  } & OptionalIfUndefined<{ params: Parameters<(typeof client)["$url"]>[0] }>,
+type SSEArgsRequired<C> = {
+  urlParams: ExtractUrlArg<C>;
+  onMessage?: (ev: MessageEvent, data: ExtractSSEOutput<C>) => void;
+  onError?: EventListenerOrEventListenerObject;
+  onOpen?: (ev: Event) => void;
+  onDone?: (ev: MessageEvent) => void;
+  withCredentials?: boolean;
+};
+
+/**
+ * A typed SSE client that has a $get endpoint returning a typed-stream
+ * and a $url method for constructing the URL.
+ */
+type TypedSSEClient = {
+  $get: (
+    ...args: never[]
+  ) => Promise<ClientResponse<unknown, number, "typed-stream">>;
+  $url: (arg?: never) => URL;
+};
+
+export function connectToSSE<C extends TypedSSEClient>(
+  client: C,
+  ...rest: UrlParamsRequired<C> extends true
+    ? [args: SSEArgsRequired<C>]
+    : [args?: SSEArgs<C>]
 ) {
-  const { onError, onMessage, onOpen, onDone, params, withCredentials } = args ?? {};
-  const eventsource = new EventSource(client.$url(params), { withCredentials });
+  const args = rest[0];
+  const { onError, onMessage, onOpen, onDone, urlParams, withCredentials } =
+    args ?? {};
+  const eventsource = new EventSource(client.$url(urlParams as never), {
+    withCredentials,
+  });
   if (onMessage !== undefined)
     eventsource.addEventListener("message", (ev: MessageEvent) => {
-      const data: T = JSON.parse(ev.data);
+      const data: ExtractSSEOutput<C> = JSON.parse(ev.data);
       onMessage(ev, data);
     });
   eventsource.addEventListener("done", (ev) => {

@@ -13,10 +13,11 @@ function addMessage(text: string, isStatus = false) {
 
 const client = hc<AppType>(window.location.origin);
 
-connectToSSE(client.sse, {
+connectToSSE(client["sse-query"], {
+  urlParams: { query: { count: "5", prefix:"a-prefix" } },
   onOpen: () => addMessage("Connection opened", true),
   onMessage: (_, data) => {
-    addMessage(`Received: myType = ${data.myType}`);
+    addMessage(`Received: myType = ${data.index} ${data.label}`);
   },
   onDone: () => addMessage("Stream complete", true),
   onError: () => addMessage("Connection error", true),
