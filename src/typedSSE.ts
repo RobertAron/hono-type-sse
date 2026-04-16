@@ -1,9 +1,5 @@
 import type { Context, TypedResponse } from "hono";
-import {
-  type SSEMessage,
-  type SSEStreamingApi,
-  streamSSE,
-} from "hono/streaming";
+import { type SSEMessage, type SSEStreamingApi, streamSSE } from "hono/streaming";
 
 interface SSEMessageTyped<T> {
   data: T;

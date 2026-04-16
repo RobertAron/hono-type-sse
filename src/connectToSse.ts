@@ -16,6 +16,7 @@ type ExtractSSEOutput<C> = C extends {
 
 /**
  * Extract the $url parameter type from a client.
+ * Reused for $path since they accept the same argument shape.
  */
 type ExtractUrlArg<C> = C extends {
   $url: (arg?: infer A) => URL;
@@ -33,12 +34,11 @@ type IsEmptyObject<T> = keyof T extends never ? true : false;
  * Required only when ExtractUrlArg resolves to a non-empty object
  * (i.e. the route has query or path params).
  */
-type UrlParamsRequired<C> =
-  ExtractUrlArg<C> extends undefined
+type UrlParamsRequired<C> = ExtractUrlArg<C> extends undefined
+  ? false
+  : IsEmptyObject<ExtractUrlArg<C>> extends true
     ? false
-    : IsEmptyObject<ExtractUrlArg<C>> extends true
-      ? false
-      : true;
+    : true;
 
 type SSEArgs<C> = {
   urlParams?: ExtractUrlArg<C>;
@@ -59,14 +59,16 @@ type SSEArgsRequired<C> = {
 };
 
 /**
- * A typed SSE client that has a $get endpoint returning a typed-stream
- * and a $url method for constructing the URL.
+ * A typed SSE client that has a $get endpoint returning a typed-stream,
+ * a $url method for type extraction, and a $path method for building
+ * relative URL strings.
  */
 type TypedSSEClient = {
   $get: (
     ...args: never[]
   ) => Promise<ClientResponse<unknown, number, "typed-stream">>;
   $url: (arg?: never) => URL;
+  $path: (arg?: never) => string;
 };
 
 export function connectToSSE<C extends TypedSSEClient>(
@@ -78,7 +80,12 @@ export function connectToSSE<C extends TypedSSEClient>(
   const args = rest[0];
   const { onError, onMessage, onOpen, onDone, urlParams, withCredentials } =
     args ?? {};
-  const eventsource = new EventSource(client.$url(urlParams as never), {
+  // Use $path instead of $url to avoid the "Invalid URL" error that occurs
+  // when hc is created with a relative base like "/". $path returns a relative
+  // path string (e.g. "/map/api?filters=...") which EventSource resolves
+  // against the current page origin.
+  const path = client.$path(urlParams as never);
+  const eventsource = new EventSource(path, {
     withCredentials,
   });
   if (onMessage !== undefined)
